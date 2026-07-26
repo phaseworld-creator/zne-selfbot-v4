@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZNE V4 — Settings</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings" class="active"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Settings</div>
+  </div>
+
+  <div class="content">
+
+    <!-- General Settings -->
+    <div class="card">
+      <div class="card-title"><span class="icon">⚙️</span> General</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label" for="prefix">Prefix</label>
+          <input type="text" class="field-input" id="prefix" maxlength="5" placeholder="p!" spellcheck="false" autocomplete="off">
+          <div class="field-hint">Up to 5 characters</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="status">Status</label>
+          <select class="field-select" id="status">
+            <option value="online">🟢 Online</option>
+            <option value="idle">🌙 Idle</option>
+            <option value="dnd">🔴 Do Not Disturb</option>
+            <option value="invisible">⚫ Invisible</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="saveBtn" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- Bot Information -->
+    <div class="card">
+      <div class="card-title"><span class="icon">ℹ️</span> Bot Information</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Username</div>
+          <div class="info-value" id="iUser">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Bot Type</div>
+          <div class="info-value" id="iType">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Commands</div>
+          <div class="info-value" id="iCmds">0</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Guilds</div>
+          <div class="info-value" id="iGuilds">0</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Uptime</div>
+          <div class="info-value" id="iUp">00:00:00</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Version</div>
+          <div class="info-value" id="iVer">ZNE V4</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card danger-card">
+      <div class="card-title"><span class="icon">⚠️</span> Danger Zone</div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Auto-delete commands</div>
+          <div class="toggle-desc">Automatically delete your command messages after execution</div>
+        </div>
+        <div class="toggle active" id="toggleDel" onclick="this.classList.toggle('active')"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var toastEl = document.getElementById('toast'), toastTimer = null;
+
+function showToast(msg, type) {
+  if (toastTimer) clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.className = 'toast ' + type;
+  void toastEl.offsetWidth;
+  toastEl.classList.add('show');
+  toastTimer = setTimeout(function () {
+    toastEl.classList.remove('show');
+    toastTimer = null;
+  }, 2500);
+}
+
+function loadSettings() {
+  fetch('/api/settings').then(function (r) { return r.json(); }).then(function (d) {
+    document.getElementById('prefix').value = d.prefix || 'p!';
+    document.getElementById('status').value = d.status || 'online';
+  }).catch(function () {});
+}
+
+function loadStats() {
+  fetch('/stats').then(function (r) { return r.json(); }).then(function (d) {
+    document.getElementById('iUser').textContent = d.username || '—';
+    var bt = (d.bot_type || '').toLowerCase();
+    document.getElementById('iType').innerHTML = bt
+      ? '<span class="info-badge ' + bt + '">' + (d.bot_type || '—') + '</span>'
+      : '—';
+    document.getElementById('iCmds').textContent = d.commands || '0';
+    document.getElementById('iGuilds').textContent = d.guilds || '0';
+    document.getElementById('iUp').textContent = d.uptime || '00:00:00';
+    document.getElementById('iVer').textContent = d.version || 'ZNE V4';
+  }).catch(function () {});
+}
+
+function saveSettings() {
+  var btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prefix: document.getElementById('prefix').value.trim(),
+      status: document.getElementById('status').value
+    })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    if (d.ok) showToast('Settings saved!', 'success');
+    else showToast('Failed to save.', 'error');
+  }).catch(function () {
+    showToast('Network error.', 'error');
+  }).finally(function () {
+    btn.disabled = false;
+    btn.textContent = 'Save Settings';
+  });
+}
+
+loadSettings();
+loadStats();
+setInterval(loadStats, 5000);
+</script>
+
+</body>
+</html>

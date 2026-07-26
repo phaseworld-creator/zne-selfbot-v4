@@ -1,0 +1,28 @@
+{
+  "prefix": "",
+  "status": "online",
+  "activity_type": "playing",
+  "activity_name": "",
+  "rich_presence": {
+    "enabled": true,
+    "type": "playing",
+    "name": "ZNE SelfBot",
+    "details": "",
+    "state": "",
+    "large_image": "",
+    "large_image_text": "",
+    "small_image": "",
+    "small_image_text": "",
+    "start_timestamp": false,
+    "buttons": [
+      {
+        "label": "",
+        "url": ""
+      },
+      {
+        "label": "",
+        "url": ""
+      }
+    ]
+  }
+}

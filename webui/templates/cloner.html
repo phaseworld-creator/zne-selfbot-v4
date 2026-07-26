@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZNE V4 — Server Cloner</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner" class="active"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Server Cloner</div>
+  </div>
+
+  <div class="content">
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> Clone Settings</div>
+
+      <div class="field">
+        <label class="field-label" for="srcId">Source Server ID</label>
+        <input type="text" class="field-input" id="srcId" placeholder="Paste the source server ID here" spellcheck="false">
+        <div class="field-hint">Use the Guilds page to find server IDs</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">What to Clone</label>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Channels</div>
+            <div class="toggle-desc">Categories, text channels, voice channels, and permissions</div>
+          </div>
+          <div class="toggle active" id="optChannels" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Roles</div>
+            <div class="toggle-desc">All roles with colors, permissions, and hoist settings</div>
+          </div>
+          <div class="toggle active" id="optRoles" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Emojis</div>
+            <div class="toggle-desc">Custom emojis (may be limited by target server boosts)</div>
+          </div>
+          <div class="toggle" id="optEmojis" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="cloneBtn" onclick="startClone()">Start Clone</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📜</span> Clone Log <span class="badge" id="cloneState">Idle</span></div>
+      <div class="log-panel" id="cloneLog">Waiting for clone to start...</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var pollTimer = null;
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : ' success');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.className = 'toast'; }, 3000);
+}
+
+function startClone() {
+  var srcId = document.getElementById('srcId').value.trim();
+  if (!srcId) { showToast('Enter a source server ID.', true); return; }
+
+  var btn = document.getElementById('cloneBtn');
+  btn.disabled = true;
+  btn.textContent = 'Starting...';
+
+  var options = {
+    channels: document.getElementById('optChannels').classList.contains('active'),
+    roles: document.getElementById('optRoles').classList.contains('active'),
+    emojis: document.getElementById('optEmojis').classList.contains('active')
+  };
+
+  fetch('/api/cloner', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({source: srcId, options: options})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      showToast('Clone started!');
+      startPolling();
+    } else {
+      showToast(d.error || 'Failed to start.', true);
+      btn.disabled = false;
+      btn.textContent = 'Start Clone';
+    }
+  })
+  .catch(function(e) {
+    showToast('Network error: ' + e, true);
+    btn.disabled = false;
+    btn.textContent = 'Start Clone';
+  });
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(pollStatus, 1500);
+  pollStatus();
+}
+
+function pollStatus() {
+  fetch('/api/cloner/status')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var logEl = document.getElementById('cloneLog');
+      var stateEl = document.getElementById('cloneState');
+      var btn = document.getElementById('cloneBtn');
+
+      if (d.log && d.log.length > 0) {
+        logEl.textContent = d.log.join('\n');
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      if (d.running) {
+        stateEl.textContent = 'Running';
+        stateEl.className = 'badge';
+      } else if (d.done && !d.error) {
+        stateEl.textContent = 'Complete';
+        stateEl.className = 'count-badge';
+        btn.disabled = false;
+        btn.textContent = 'Start Clone';
+        clearInterval(pollTimer);
+        pollTimer = null;
+      } else if (d.error) {
+        stateEl.textContent = 'Error';
+        stateEl.className = 'badge';
+        logEl.textContent += '\n[ERROR] ' + d.error;
+        btn.disabled = false;
+        btn.textContent = 'Start Clone';
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    })
+    .catch(function() {});
+}
+
+fetch('/api/cloner/status')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.running) startPolling();
+    else if (d.log && d.log.length > 0) {
+      document.getElementById('cloneLog').textContent = d.log.join('\n');
+      document.getElementById('cloneState').textContent = d.done ? 'Complete' : 'Idle';
+    }
+  })
+  .catch(function() {});
+</script>
+</body>
+</html>

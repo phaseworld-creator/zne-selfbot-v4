@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZNE V4 — Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/" class="active"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Dashboard</div>
+  </div>
+
+  <div class="content">
+
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-card-icon guilds">🏰</div>
+        <div class="stat-card-info">
+          <span class="stat-card-label">Guilds</span>
+          <span class="stat-card-number" id="cardGuilds">0</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon commands">⚡</div>
+        <div class="stat-card-info">
+          <span class="stat-card-label">Commands</span>
+          <span class="stat-card-number" id="cardCommands">0</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon uptime">⏱️</div>
+        <div class="stat-card-info">
+          <span class="stat-card-label">Uptime</span>
+          <span class="stat-card-number" id="cardUptime">00:00:00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bot-info">
+      <div class="avatar-ring">
+        <div class="avatar-inner" id="avatarBox">
+          <span class="avatar-placeholder">👤</span>
+        </div>
+      </div>
+      <div class="bot-details">
+        <div class="bot-username">
+          <span id="username">Loading...</span>
+          <span class="online-dot"></span>
+        </div>
+        <div class="bot-meta">
+          <span>Bot Type: <span class="meta-badge self" id="botType">SELF</span></span>
+          <span>Prefix: <strong id="botPrefix">p!</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="console">
+      <div class="console-head">
+        <div class="console-head-left">
+          <span class="console-dot"></span>
+          <span class="console-title">Console</span>
+        </div>
+        <div class="console-actions">
+          <button class="console-btn" id="btnPause" onclick="togglePause()">Pause</button>
+          <button class="console-btn" onclick="clearLogs()">Clear</button>
+        </div>
+      </div>
+      <div class="console-body" id="console"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var MAX_LOGS = 500;
+var paused = false;
+var consoleEl = document.getElementById('console');
+var btnPause = document.getElementById('btnPause');
+
+function classify(msg) {
+  var m = msg.toLowerCase();
+  if (m.indexOf('[error]') !== -1 || m.indexOf('traceback') !== -1 || m.indexOf('exception') !== -1) return 'err';
+  if (m.indexOf('[warn]') !== -1 || m.indexOf('warning') !== -1) return 'warn';
+  if (m.indexOf('successfully') !== -1 || m.indexOf('success') !== -1) return 'ok';
+  if (m.indexOf('[info]') !== -1 || m.indexOf('info') !== -1) return 'info';
+  return 'dim';
+}
+
+function appendLog(message) {
+  if (!message || !message.trim()) return;
+  var line = document.createElement('div');
+  line.className = 'log-line ' + classify(message);
+  line.textContent = message;
+  consoleEl.appendChild(line);
+  while (consoleEl.children.length > MAX_LOGS) {
+    consoleEl.removeChild(consoleEl.firstChild);
+  }
+  if (!paused) {
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+}
+
+function clearLogs() {
+  consoleEl.innerHTML = '';
+}
+
+function togglePause() {
+  paused = !paused;
+  btnPause.textContent = paused ? 'Resume' : 'Pause';
+  btnPause.classList.toggle('active', paused);
+  if (!paused) {
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+}
+
+fetch('/api/logs')
+  .then(function(r) { return r.json(); })
+  .then(function(data) { (data.logs || []).forEach(appendLog); })
+  .catch(function() {});
+
+var evtSource = new EventSource('/stream');
+evtSource.onmessage = function(e) { appendLog(e.data); };
+evtSource.onerror = function() { appendLog('[ERROR] Connection lost. Reconnecting...'); };
+
+function updateStats() {
+  fetch('/stats')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.username && d.username !== 'Loading...') {
+        document.getElementById('username').textContent = d.username;
+      }
+      document.getElementById('cardGuilds').textContent = d.guilds || 0;
+      document.getElementById('cardCommands').textContent = d.commands || 0;
+      document.getElementById('cardUptime').textContent = d.uptime || '00:00:00';
+      var bt = document.getElementById('botType');
+      var type = (d.bot_type || 'self').toLowerCase();
+      bt.textContent = type === 'self' ? 'SELF' : 'USER';
+      bt.className = 'meta-badge ' + type;
+      if (d.prefix) {
+        document.getElementById('botPrefix').textContent = d.prefix;
+      }
+      if (d.avatar_url) {
+        document.getElementById('avatarBox').innerHTML =
+          '<img src="' + d.avatar_url + '" alt="Avatar">';
+      }
+    })
+    .catch(function() {});
+}
+
+updateStats();
+setInterval(updateStats, 2000);
+</script>
+</body>
+</html>

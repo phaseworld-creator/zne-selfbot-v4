@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZNE V4 — Guilds</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds" class="active"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Guilds <span class="count-badge" id="guildCount">0</span></div>
+    <div class="search-box">
+      <span class="icon">🔍</span>
+      <input type="text" id="guildSearch" placeholder="Search guilds...">
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="guild-grid" id="guildGrid"></div>
+
+    <div class="loading-wrap" id="loading">
+      <div class="spinner"></div>
+      <span>Loading guilds...</span>
+    </div>
+
+    <div class="empty-wrap" id="emptyState" style="display:none;">
+      <div class="empty-icon">🏰</div>
+      <div class="empty-text">No guilds found</div>
+    </div>
+  </div>
+</div>
+
+<script>
+var LOADING = document.getElementById('loading');
+var EMPTY = document.getElementById('emptyState');
+var GRID = document.getElementById('guildGrid');
+var SEARCH = document.getElementById('guildSearch');
+var COUNTER = document.getElementById('guildCount');
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(s || ''));
+  return d.innerHTML;
+}
+
+function getInitials(name) {
+  if (!name) return '??';
+  var clean = name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+  var parts = clean.split(/\s+/);
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+  }
+  return clean.substring(0, 2).toUpperCase();
+}
+
+function channelIcon(type) {
+  if (type === 'text' || type === 0) return '#';
+  if (type === 'voice' || type === 2) return '\uD83D\uDD0A';
+  if (type === 'category' || type === 4) return '\uD83D\uDCC1';
+  if (type === 'announcement' || type === 5) return '\uD83D\uDCE2';
+  return '\uD83D\uDCAC';
+}
+
+function formatNumber(n) {
+  if (n == null) return '0';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+function loadGuilds() {
+  LOADING.style.display = '';
+  EMPTY.style.display = 'none';
+  GRID.innerHTML = '';
+
+  fetch('/api/guilds')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var guilds = Array.isArray(data) ? data : [];
+      LOADING.style.display = 'none';
+      COUNTER.textContent = guilds.length;
+      render(guilds);
+    })
+    .catch(function() {
+      LOADING.style.display = 'none';
+      EMPTY.style.display = '';
+    });
+}
+
+function render(guilds) {
+  if (!guilds || guilds.length === 0) {
+    GRID.innerHTML = '';
+    EMPTY.style.display = '';
+    return;
+  }
+  EMPTY.style.display = 'none';
+  var h = '';
+  for (var i = 0; i < guilds.length; i++) {
+    h += buildCard(guilds[i]);
+  }
+  GRID.innerHTML = h;
+}
+
+function buildCard(g) {
+  var iconHtml;
+  if (g.icon_url) {
+    iconHtml = '<img src="' + esc(g.icon_url) + '" alt="">';
+  } else {
+    iconHtml = '<span>' + esc(getInitials(g.name)) + '</span>';
+  }
+
+  var ownerBadge = g.is_owner
+    ? '<div class="owner-badge">Owner</div>'
+    : '';
+
+  var gid = esc(String(g.id));
+
+  return '<div class="guild-card" data-id="' + gid + '">' +
+    '<div class="guild-top">' +
+      '<div class="guild-icon">' + iconHtml + '</div>' +
+      '<div class="guild-info">' +
+        '<div class="guild-name">' + esc(g.name) + '</div>' +
+        '<div class="guild-meta">' +
+          '<span>' + formatNumber(g.member_count) + ' members</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    ownerBadge +
+    '<div class="guild-id">ID: ' + gid + '</div>' +
+    '<button class="channels-btn" data-gid="' + gid + '">Show Channels</button>' +
+    '<div class="channel-wrap" id="ch-' + gid + '"></div>' +
+  '</div>';
+}
+
+function toggleChannels(guildId, btn) {
+  var wrap = document.getElementById('ch-' + guildId);
+  if (wrap.classList.contains('open')) {
+    wrap.classList.remove('open');
+    wrap.innerHTML = '';
+    btn.classList.remove('active');
+    btn.textContent = 'Show Channels';
+    return;
+  }
+  btn.textContent = 'Loading...';
+  btn.disabled = true;
+
+  fetch('/api/guild/' + guildId + '/channels')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var channels = Array.isArray(data) ? data : [];
+      var h = '';
+      for (var i = 0; i < channels.length; i++) {
+        var ch = channels[i];
+        var icon = channelIcon(ch.type);
+        h += '<div class="channel-item">' +
+          '<span class="channel-name">' + icon + ' ' + esc(ch.name) + '</span>' +
+          '<span class="channel-pos">' + (ch.position != null ? ch.position : i) + '</span>' +
+        '</div>';
+      }
+      if (channels.length === 0) {
+        h = '<div class="channel-item"><span class="channel-name">No channels</span></div>';
+      }
+      wrap.innerHTML = h;
+      wrap.classList.add('open');
+      btn.classList.add('active');
+      btn.textContent = 'Hide Channels';
+    })
+    .catch(function() {
+      wrap.innerHTML = '<div class="channel-item"><span class="channel-name">Failed to load</span></div>';
+      wrap.classList.add('open');
+      btn.textContent = 'Hide Channels';
+    })
+    .finally(function() {
+      btn.disabled = false;
+    });
+}
+
+GRID.addEventListener('click', function(e) {
+  var btn = e.target.closest('.channels-btn');
+  if (!btn) return;
+  toggleChannels(btn.getAttribute('data-gid'), btn);
+});
+
+SEARCH.addEventListener('input', function() {
+  var q = SEARCH.value.toLowerCase().trim();
+  var cards = GRID.querySelectorAll('.guild-card');
+  var visible = 0;
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var nameEl = card.querySelector('.guild-name');
+    var match = !q || (nameEl && nameEl.textContent.toLowerCase().indexOf(q) !== -1);
+    card.style.display = match ? '' : 'none';
+    if (match) visible++;
+  }
+  EMPTY.style.display = (visible === 0 && cards.length > 0) ? '' : 'none';
+});
+
+loadGuilds();
+</script>
+</body>
+</html>

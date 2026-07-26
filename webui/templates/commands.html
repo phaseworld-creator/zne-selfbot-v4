@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>ZNE V4 — Commands</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands" class="active"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Commands</div>
+    <div class="search-box">
+      <span class="icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search commands...">
+    </div>
+  </div>
+
+  <div class="content">
+    {% if command_groups %}
+      {% for category, names in command_groups.items() %}
+        <div class="cat-card" data-cat="{{ category }}">
+          <div class="cat-header" onclick="toggleCat(this)">
+            <div class="cat-header-left">
+              <span class="cat-name">{{ category }}</span>
+              <span class="cat-count">{{ names|length }}</span>
+            </div>
+            <span class="cat-chevron">▼</span>
+          </div>
+          <div class="cat-body">
+            {% for name in names %}
+              <span class="chip" data-cmd="{{ name }}">{{ name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty"><div class="empty-icon">📋</div>No commands loaded.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-info">
+        <div class="modal-cmd" id="mName"></div>
+        <div class="modal-cat" id="mCat"></div>
+      </div>
+      <button class="modal-x" id="mClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div><div class="field-lbl">Usage</div><div class="field-val" id="mUsage"></div></div>
+      <div><div class="field-lbl">Arguments</div><div class="field-val" id="mArgs">—</div></div>
+      <div><div class="field-lbl">Example</div><div class="field-val" id="mExample">—</div></div>
+      <div>
+        <div class="field-lbl">Args (editable)</div>
+        <input type="text" class="field-input" id="mArgsInput" placeholder="Type command arguments...">
+      </div>
+      <button class="exec-btn" id="mExec">Execute Command</button>
+      <div class="exec-status" id="mStatus"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var overlay = document.getElementById('overlay');
+  var mName = document.getElementById('mName');
+  var mCat = document.getElementById('mCat');
+  var mUsage = document.getElementById('mUsage');
+  var mArgs = document.getElementById('mArgs');
+  var mExample = document.getElementById('mExample');
+  var mArgsInput = document.getElementById('mArgsInput');
+  var mExec = document.getElementById('mExec');
+  var mStatus = document.getElementById('mStatus');
+  var mClose = document.getElementById('mClose');
+  var searchInput = document.getElementById('searchInput');
+  var curCmd = null;
+
+  /* Toggle category collapse */
+  window.toggleCat = function (header) {
+    header.closest('.cat-card').classList.toggle('collapsed');
+  };
+
+  /* Open modal on chip click and fetch command details */
+  document.querySelectorAll('.chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      curCmd = chip.dataset.cmd;
+      var card = chip.closest('.cat-card');
+      mName.textContent = curCmd;
+      mCat.textContent = card ? card.dataset.cat : '';
+      mUsage.textContent = '.' + curCmd;
+      mArgs.textContent = 'No arguments defined';
+      mExample.textContent = '.' + curCmd + ' <args>';
+      mArgsInput.value = '';
+      mStatus.textContent = '';
+      mStatus.className = 'exec-status';
+      mExec.disabled = false;
+      overlay.classList.add('show');
+      setTimeout(function () { mArgsInput.focus(); }, 100);
+
+      /* Fetch real details from API */
+      fetch('/api/command/' + encodeURIComponent(curCmd))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.usage) mUsage.textContent = d.usage;
+          if (d.arguments) mArgs.textContent = d.arguments;
+          if (d.example) mExample.textContent = d.example;
+          if (d.category) mCat.textContent = d.category;
+        })
+        .catch(function () { /* keep defaults */ });
+    });
+  });
+
+  /* Close modal */
+  function closeModal() {
+    overlay.classList.remove('show');
+    curCmd = null;
+  }
+
+  mClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  /* Execute command */
+  mExec.addEventListener('click', function () {
+    if (!curCmd) return;
+    mExec.disabled = true;
+    mStatus.textContent = 'Sending\u2026';
+    mStatus.className = 'exec-status';
+    fetch('/api/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: curCmd, args: mArgsInput.value.trim() })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          mStatus.textContent = '\u2713 Executed';
+          mStatus.className = 'exec-status ok';
+        } else {
+          mStatus.textContent = '\u2717 ' + (d.error || 'Failed');
+          mStatus.className = 'exec-status err';
+        }
+      })
+      .catch(function (e) {
+        mStatus.textContent = '\u2717 ' + e;
+        mStatus.className = 'exec-status err';
+      })
+      .finally(function () {
+        mExec.disabled = false;
+      });
+  });
+
+  /* Search / filter */
+  searchInput.addEventListener('input', function () {
+    var q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.cat-card').forEach(function (card) {
+      var visible = 0;
+      card.querySelectorAll('.chip').forEach(function (c) {
+        var match = !q || c.dataset.cmd.toLowerCase().indexOf(q) !== -1;
+        c.classList.toggle('hidden', !match);
+        if (match) visible++;
+      });
+      card.classList.toggle('hidden', q && visible === 0);
+      if (q) card.classList.remove('collapsed');
+    });
+    /* Update category counts to reflect filtered results */
+    document.querySelectorAll('.cat-count').forEach(function (el) {
+      var card = el.closest('.cat-card');
+      if (!card) return;
+      el.textContent = card.querySelectorAll('.chip:not(.hidden)').length;
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

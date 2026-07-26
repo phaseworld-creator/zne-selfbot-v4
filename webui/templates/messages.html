@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZNE V4 — Messages</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages" class="active"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Messages <span class="count-badge" id="msgCount">0</span></div>
+    <button class="btn btn-primary btn-sm" onclick="fetchMessages()">Refresh</button>
+  </div>
+
+  <div class="content">
+
+    <div class="filter-bar">
+      <div class="search-box">
+        <span class="icon">🔍</span>
+        <input type="text" id="msgSearch" placeholder="Search messages..." oninput="render()">
+      </div>
+      <select id="authorFilter" class="field-select" onchange="render()">
+        <option value="">All Authors</option>
+      </select>
+      <select id="channelFilter" class="field-select" onchange="render()">
+        <option value="">All Channels</option>
+      </select>
+    </div>
+
+    <div class="msg-list">
+      <div class="msg-header">
+        <div>Time</div>
+        <div>Author</div>
+        <div>Channel</div>
+        <div>Content</div>
+      </div>
+
+      <div id="loadingState" class="loading-wrap">
+        <div class="spinner"></div>
+        <span>Loading messages...</span>
+      </div>
+
+      <div id="emptyState" style="display:none;" class="empty-wrap">
+        <div class="empty-icon">📭</div>
+        <div class="empty-text">No messages found</div>
+      </div>
+
+      <div id="msgList"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var allMessages = [];
+
+function esc(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(s));
+  return d.innerHTML;
+}
+
+function relativeTime(ts) {
+  var now = Date.now();
+  var then = new Date(ts).getTime();
+  var diff = Math.floor((now - then) / 1000);
+  if (diff < 5) return 'just now';
+  if (diff < 60) return diff + 's ago';
+  var mins = Math.floor(diff / 60);
+  if (mins < 60) return mins + 'm ago';
+  var hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  var days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var d2 = new Date(ts);
+  return months[d2.getMonth()] + ' ' + d2.getDate() + ', ' + d2.getFullYear();
+}
+
+function absoluteTime(ts) {
+  var d = new Date(ts);
+  return d.toLocaleString('en-US', {
+    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+
+function fetchMessages() {
+  var loading = document.getElementById('loadingState');
+  var empty = document.getElementById('emptyState');
+  var list = document.getElementById('msgList');
+  loading.style.display = '';
+  empty.style.display = 'none';
+  list.innerHTML = '';
+
+  fetch('/api/messages?limit=200')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      allMessages = data.messages || [];
+      document.getElementById('msgCount').textContent = allMessages.length;
+      loading.style.display = 'none';
+      populateFilters();
+      render();
+    })
+    .catch(function() {
+      loading.style.display = 'none';
+      allMessages = [];
+      document.getElementById('msgCount').textContent = '0';
+      render();
+    });
+}
+
+function populateFilters() {
+  var authors = {};
+  var channels = {};
+  allMessages.forEach(function(m) {
+    if (m.author_id) authors[m.author_id] = true;
+    if (m.channel_id) channels[m.channel_id] = true;
+  });
+
+  var authorSel = document.getElementById('authorFilter');
+  var channelSel = document.getElementById('channelFilter');
+  var authorVal = authorSel.value;
+  var channelVal = channelSel.value;
+
+  authorSel.innerHTML = '<option value="">All Authors</option>';
+  channelSel.innerHTML = '<option value="">All Channels</option>';
+
+  Object.keys(authors).sort().forEach(function(a) {
+    var opt = document.createElement('option');
+    opt.value = a;
+    opt.textContent = a;
+    authorSel.appendChild(opt);
+  });
+
+  Object.keys(channels).sort().forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    channelSel.appendChild(opt);
+  });
+
+  authorSel.value = authorVal;
+  channelSel.value = channelVal;
+}
+
+function getFilteredMessages() {
+  var q = document.getElementById('msgSearch').value.toLowerCase().trim();
+  var author = document.getElementById('authorFilter').value;
+  var channel = document.getElementById('channelFilter').value;
+
+  return allMessages.filter(function(m) {
+    if (author && m.author_id !== author) return false;
+    if (channel && m.channel_id !== channel) return false;
+    if (q) {
+      var haystack = ((m.content || '') + ' ' + (m.author_id || '') + ' ' + (m.channel_id || '')).toLowerCase();
+      if (haystack.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  var loading = document.getElementById('loadingState');
+  if (loading.style.display !== 'none') return;
+
+  var filtered = getFilteredMessages();
+  var empty = document.getElementById('emptyState');
+  var list = document.getElementById('msgList');
+
+  if (filtered.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  var html = '';
+  filtered.forEach(function(m) {
+    var ts = m.timestamp || m.created_at || '';
+    html += '<div class="msg-row">' +
+      '<div class="msg-time" title="' + esc(absoluteTime(ts)) + '">' + esc(relativeTime(ts)) + '</div>' +
+      '<div class="msg-author">' + esc(m.author_id || '') + '</div>' +
+      '<div class="msg-channel">' + esc(m.channel_id || '') + '</div>' +
+      '<div class="msg-content">' + esc(m.content || '') + '</div>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+
+fetchMessages();
+</script>
+</body>
+</html>

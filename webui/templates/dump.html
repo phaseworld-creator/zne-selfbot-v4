@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZNE V4 — Dump</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump" class="active"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Dump</div>
+  </div>
+
+  <div class="content">
+
+    <div class="dump-grid">
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">📁</span> Dump All</div>
+        <div class="dump-desc">Download all attachments, text, and media from a channel.</div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpall" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpall', this)">Run dumpall</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">🖼️</span> Dump Images</div>
+        <div class="dump-desc">Download all images from a channel.</div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpimages" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpimages', this)">Run dumpimages</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">🎬</span> Dump Videos</div>
+        <div class="dump-desc">Download all videos from a channel.</div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpvideos" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpvideos', this)">Run dumpvideos</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">🎵</span> Dump Audio</div>
+        <div class="dump-desc">Download all audio files from a channel.</div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpaudio" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpaudio', this)">Run dumpaudio</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">📝</span> Dump Text</div>
+        <div class="dump-desc">Save all text messages from a channel.</div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumptext" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumptext', this)">Run dumptext</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">📎</span> Dump Attachments</div>
+        <div class="dump-desc">Download all file attachments from a channel.</div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpattachments" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpattachments', this)">Run dumpattachments</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">😀</span> Dump Emojis</div>
+        <div class="dump-desc">Download all custom emojis from a server.</div>
+        <div class="field">
+          <label class="field-label">Server (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpemojis" placeholder="Server ID or name">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpemojis', this)">Run dumpemojis</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">🏷️</span> Dump Stickers</div>
+        <div class="dump-desc">Download all stickers from a server.</div>
+        <div class="field">
+          <label class="field-label">Server (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpstickers" placeholder="Server ID or name">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpstickers', this)">Run dumpstickers</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">👤</span> Dump Avatars</div>
+        <div class="dump-desc">Download all member avatars from a server.</div>
+        <div class="field">
+          <label class="field-label">Server (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpavatars" placeholder="Server ID or name">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpavatars', this)">Run dumpavatars</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">📺</span> Dump Channels</div>
+        <div class="dump-desc">Export all channel info and messages from a server.</div>
+        <div class="field">
+          <label class="field-label">Server (optional)</label>
+          <input type="text" class="field-input dump-arg" data-cmd="dumpchannels" placeholder="Server ID or name">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDump('dumpchannels', this)">Run dumpchannels</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">🔍</span> Dump by File Type</div>
+        <div class="dump-desc">Download files matching a specific extension.</div>
+        <div class="field">
+          <label class="field-label">Extension</label>
+          <input type="text" class="field-input" id="fileTypeExt" placeholder=".png, .pdf, etc">
+        </div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input" id="fileTypeCh" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDumpFileType()">Run dumpfiletype</button>
+      </div>
+
+      <div class="card dump-card">
+        <div class="card-title"><span class="icon">🔎</span> Dump by Content Type</div>
+        <div class="dump-desc">Download files matching a MIME content type.</div>
+        <div class="field">
+          <label class="field-label">Content Type</label>
+          <input type="text" class="field-input" id="contentType" placeholder="image/png, video/mp4, etc">
+        </div>
+        <div class="field">
+          <label class="field-label">Channel (optional)</label>
+          <input type="text" class="field-input" id="contentTypeCh" placeholder="#channel or ID">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runDumpContentType()">Run dumpcontenttype</button>
+      </div>
+
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📜</span> Status <span class="badge" id="dumpState">Idle</span></div>
+      <div class="log-panel" id="dumpLog">Ready. Pick a dump command above to start.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var pollTimer = null;
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : ' success');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.className = 'toast'; }, 3000);
+}
+
+function runDump(cmd, btn) {
+  var argInput = document.querySelector('.dump-arg[data-cmd="' + cmd + '"]');
+  var args = argInput ? argInput.value.trim() : '';
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Running...'; }
+
+  fetch('/api/dump', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({command: cmd, args: args})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      showToast(cmd + ' started!');
+      startPolling();
+    } else {
+      showToast(d.error || 'Failed.', true);
+      if (btn) { btn.disabled = false; btn.textContent = 'Run ' + cmd; }
+    }
+  })
+  .catch(function(e) {
+    showToast('Network error.', true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Run ' + cmd; }
+  });
+}
+
+function runDumpFileType() {
+  var ext = document.getElementById('fileTypeExt').value.trim();
+  var ch = document.getElementById('fileTypeCh').value.trim();
+  if (!ext) { showToast('Enter a file extension.', true); return; }
+  fetch('/api/dump', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({command: 'dumpfiletype', args: ext + (ch ? ' ' + ch : '')})
+  }).then(function(r) { return r.json(); })
+    .then(function(d) { if (d.ok) startPolling(); else showToast(d.error, true); })
+    .catch(function() { showToast('Network error.', true); });
+}
+
+function runDumpContentType() {
+  var ct = document.getElementById('contentType').value.trim();
+  var ch = document.getElementById('contentTypeCh').value.trim();
+  if (!ct) { showToast('Enter a content type.', true); return; }
+  fetch('/api/dump', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({command: 'dumpcontenttype', args: ct + (ch ? ' ' + ch : '')})
+  }).then(function(r) { return r.json(); })
+    .then(function(d) { if (d.ok) startPolling(); else showToast(d.error, true); })
+    .catch(function() { showToast('Network error.', true); });
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(pollStatus, 1500);
+  pollStatus();
+}
+
+function pollStatus() {
+  fetch('/api/dump/status')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var logEl = document.getElementById('dumpLog');
+      var stateEl = document.getElementById('dumpState');
+
+      if (d.progress) {
+        logEl.textContent = (d.command ? '[' + d.command + '] ' : '') + d.progress;
+      }
+
+      if (d.running) {
+        stateEl.textContent = 'Running';
+        stateEl.className = 'badge';
+      } else if (d.done && !d.error) {
+        stateEl.textContent = 'Complete';
+        stateEl.className = 'count-badge';
+        logEl.textContent += '\n' + (d.result || 'Done.');
+        clearInterval(pollTimer);
+        pollTimer = null;
+        document.querySelectorAll('.btn-primary[disabled]').forEach(function(b) {
+          b.disabled = false;
+        });
+      } else if (d.error) {
+        stateEl.textContent = 'Error';
+        stateEl.className = 'badge';
+        logEl.textContent += '\n[ERROR] ' + d.error;
+        clearInterval(pollTimer);
+        pollTimer = null;
+        document.querySelectorAll('.btn-primary[disabled]').forEach(function(b) {
+          b.disabled = false;
+        });
+      }
+    })
+    .catch(function() {});
+}
+
+fetch('/api/dump/status')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.running) startPolling();
+    else if (d.progress) {
+      document.getElementById('dumpLog').textContent = d.progress;
+      document.getElementById('dumpState').textContent = d.done ? 'Complete' : 'Idle';
+    }
+  })
+  .catch(function() {});
+</script>
+</body>
+</html>

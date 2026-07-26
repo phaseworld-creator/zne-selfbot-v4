@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZNE V4 — Rich Presence</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="brand-dot"></span> ZNE</a>
+  <nav class="sidebar-nav">
+    <a href="/"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/commands"><span class="nav-icon">⚡</span> Commands</a>
+    <a href="/guilds"><span class="nav-icon">🏰</span> Guilds</a>
+    <a href="/cloner"><span class="nav-icon">📋</span> Cloner</a>
+    <a href="/dump"><span class="nav-icon">📦</span> Dump</a>
+    <a href="/presence" class="active"><span class="nav-icon">🎯</span> Rich Presence</a>
+    <a href="/messages"><span class="nav-icon">💬</span> Messages</a>
+    <a href="/settings"><span class="nav-icon">⚙️</span> Settings</a>
+  </nav>
+  <div class="sidebar-footer">ZNE V4<br><span class="sidebar-footer-sub">WebUI by PhaseWorld</span></div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Rich Presence</div>
+  </div>
+
+  <div class="content">
+
+    <div class="rp-layout">
+
+      <!-- LEFT: Editor -->
+      <div>
+        <div class="card">
+          <div class="card-title"><span class="icon">🎮</span> Activity Settings</div>
+
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Enable Rich Presence</div>
+              <div class="toggle-desc">Show a custom activity on your profile</div>
+            </div>
+            <div class="toggle active" id="rpEnabled" onclick="this.classList.toggle('active'); updatePreview();"></div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="rpType">Activity Type</label>
+            <select class="field-select" id="rpType">
+              <option value="0">Playing</option>
+              <option value="1">Streaming</option>
+              <option value="2">Listening</option>
+              <option value="3">Watching</option>
+              <option value="5">Competing</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="rpName">Name</label>
+            <input type="text" class="field-input" id="rpName" placeholder="Activity name">
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="rpDetails">Details</label>
+              <input type="text" class="field-input" id="rpDetails" placeholder="Line 1">
+            </div>
+            <div class="field">
+              <label class="field-label" for="rpState">State</label>
+              <input type="text" class="field-input" id="rpState" placeholder="Line 2">
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Show Elapsed Time</div>
+              <div class="toggle-desc">Display how long the activity has been running</div>
+            </div>
+            <div class="toggle" id="rpTimestamp" onclick="this.classList.toggle('active'); updatePreview();"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">🖼️</span> Images</div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="rpLargeImg">Large Image Key</label>
+              <input type="text" class="field-input" id="rpLargeImg" placeholder="Image key or URL">
+            </div>
+            <div class="field">
+              <label class="field-label" for="rpLargeTip">Large Image Tooltip</label>
+              <input type="text" class="field-input" id="rpLargeTip" placeholder="Tooltip text">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="rpSmallImg">Small Image Key</label>
+              <input type="text" class="field-input" id="rpSmallImg" placeholder="Image key or URL">
+            </div>
+            <div class="field">
+              <label class="field-label" for="rpSmallTip">Small Image Tooltip</label>
+              <input type="text" class="field-input" id="rpSmallTip" placeholder="Tooltip text">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">🔗</span> Buttons</div>
+
+          <div class="btn-row">
+            <input type="text" class="field-input" id="rpBtn1Label" placeholder="Button 1 label">
+            <input type="text" class="field-input" id="rpBtn1Url" placeholder="https://...">
+          </div>
+
+          <hr class="section-sep">
+
+          <div class="btn-row">
+            <input type="text" class="field-input" id="rpBtn2Label" placeholder="Button 2 label">
+            <input type="text" class="field-input" id="rpBtn2Url" placeholder="https://...">
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="applyBtn" onclick="savePresence()">Apply Changes</button>
+      </div>
+
+      <!-- RIGHT: Preview -->
+      <div class="rp-preview">
+        <div class="card">
+          <div class="card-title"><span class="icon">👁️</span> Live Preview</div>
+
+          <div id="previewArea" class="rp-preview-area">
+            <div class="discord-preview">
+              <div class="preview-avatar" id="previewAvatarWrap">
+                <span class="preview-avatar-text" id="previewAvatarText">U</span>
+              </div>
+
+              <div class="preview-content">
+                <div class="preview-username" id="previewUsername">Username</div>
+                <div class="preview-activity-type" id="previewTypeLine">
+                  <span id="previewActLabel"></span>
+                  <span class="preview-act-name-inline" id="previewActName"></span>
+                </div>
+
+                <div class="preview-card-inner" id="previewCard">
+                  <div class="preview-activity">
+                    <div class="preview-icon-stack">
+                      <div class="preview-large-icon" id="previewLargeIcon">
+                        <span class="icon-placeholder">512×512</span>
+                      </div>
+                      <div class="preview-small-icon-wrap" id="previewSmallIconWrap">
+                        <div class="preview-small-icon" id="previewSmallIcon">
+                          <span class="icon-placeholder icon-placeholder-sm">128</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="preview-activity-info">
+                      <div class="preview-act-name" id="previewActNameDetail"></div>
+                      <div class="preview-act-detail" id="previewDetail"></div>
+                      <div class="preview-act-detail" id="previewState"></div>
+                      <div class="preview-act-detail" id="previewTimestamp"></div>
+                    </div>
+                  </div>
+
+                  <div class="preview-buttons" id="previewButtons"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-empty" id="previewEmpty">
+            <div class="preview-empty-icon">🎯</div>
+            Enable Rich Presence and enter a name to see the preview
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var elEnabled   = document.getElementById('rpEnabled');
+  var elType      = document.getElementById('rpType');
+  var elName      = document.getElementById('rpName');
+  var elDetails   = document.getElementById('rpDetails');
+  var elState     = document.getElementById('rpState');
+  var elTimestamp  = document.getElementById('rpTimestamp');
+  var elLargeImg  = document.getElementById('rpLargeImg');
+  var elLargeTip  = document.getElementById('rpLargeTip');
+  var elSmallImg  = document.getElementById('rpSmallImg');
+  var elSmallTip  = document.getElementById('rpSmallTip');
+  var elBtn1Label = document.getElementById('rpBtn1Label');
+  var elBtn1Url   = document.getElementById('rpBtn1Url');
+  var elBtn2Label = document.getElementById('rpBtn2Label');
+  var elBtn2Url   = document.getElementById('rpBtn2Url');
+
+  var pPreview    = document.getElementById('previewArea');
+  var pEmpty      = document.getElementById('previewEmpty');
+  var pCard       = document.getElementById('previewCard');
+  var pAvatarText = document.getElementById('previewAvatarText');
+  var pUsername   = document.getElementById('previewUsername');
+  var pActLabel   = document.getElementById('previewActLabel');
+  var pActName    = document.getElementById('previewActName');
+  var pActNameDet = document.getElementById('previewActNameDetail');
+  var pDetail     = document.getElementById('previewDetail');
+  var pState      = document.getElementById('previewState');
+  var pTimestamp  = document.getElementById('previewTimestamp');
+  var pLargeIcon  = document.getElementById('previewLargeIcon');
+  var pSmallWrap  = document.getElementById('previewSmallIconWrap');
+  var pSmallIcon  = document.getElementById('previewSmallIcon');
+  var pButtons    = document.getElementById('previewButtons');
+
+  var ACTIVITY_LABELS = {
+    '0': 'Playing',
+    '1': 'Streaming',
+    '2': 'Listening to',
+    '3': 'Watching',
+    '5': 'Competing in'
+  };
+
+  var startTimestamp = null;
+
+  function showToast(msg, isError) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.className = 'toast'; }, 2800);
+  }
+
+  function gatherData() {
+    return {
+      enabled: elEnabled.classList.contains('active'),
+      activity_type: parseInt(elType.value, 10),
+      name: elName.value.trim(),
+      details: elDetails.value.trim(),
+      state: elState.value.trim(),
+      timestamps: elTimestamp.classList.contains('active'),
+      large_image: elLargeImg.value.trim(),
+      large_tooltip: elLargeTip.value.trim(),
+      small_image: elSmallImg.value.trim(),
+      small_tooltip: elSmallTip.value.trim(),
+      button1_label: elBtn1Label.value.trim(),
+      button1_url: elBtn1Url.value.trim(),
+      button2_label: elBtn2Label.value.trim(),
+      button2_url: elBtn2Url.value.trim()
+    };
+  }
+
+  function updatePreview() {
+    var d = gatherData();
+    var hasActivity = d.name.length > 0;
+
+    if (!d.enabled || !hasActivity) {
+      pPreview.style.display = 'none';
+      pEmpty.style.display = '';
+      return;
+    }
+
+    pPreview.style.display = '';
+    pEmpty.style.display = 'none';
+
+    var typeStr = ACTIVITY_LABELS[String(d.activity_type)] || 'Playing';
+    pActLabel.textContent = typeStr + ' ';
+    pActName.textContent = d.name;
+
+    var showCard = d.details || d.state || d.large_image || d.small_image ||
+                   d.button1_label || d.button2_label;
+    pCard.style.display = showCard ? '' : 'none';
+
+    pActNameDet.textContent = d.name;
+
+    pDetail.textContent = d.details || '';
+    pDetail.style.display = d.details ? '' : 'none';
+
+    pState.textContent = d.state || '';
+    pState.style.display = d.state ? '' : 'none';
+
+    if (d.timestamps) {
+      if (!startTimestamp) startTimestamp = Date.now();
+      var elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+      var h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+      var m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+      var s = String(elapsed % 60).padStart(2, '0');
+      pTimestamp.textContent = h + ':' + m + ':' + s + ' elapsed';
+      pTimestamp.style.display = '';
+    } else {
+      startTimestamp = null;
+      pTimestamp.style.display = 'none';
+    }
+
+    if (d.large_image) {
+      var url = 'https://cdn.discordapp.com/app-assets/' +
+                encodeURIComponent(d.large_image) + '/512.png';
+      pLargeIcon.innerHTML = '<img class="preview-icon-img" src="' + url +
+        '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" alt="Large">' +
+        '<span class="icon-placeholder" style="display:none;">Not found</span>';
+    } else {
+      pLargeIcon.innerHTML = '<span class="icon-placeholder">512×512</span>';
+    }
+
+    if (d.small_image) {
+      pSmallWrap.style.display = '';
+      var surl = 'https://cdn.discordapp.com/app-assets/' +
+                 encodeURIComponent(d.small_image) + '/128.png';
+      pSmallIcon.innerHTML = '<img class="preview-icon-img" src="' + surl +
+        '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" alt="Small">' +
+        '<span class="icon-placeholder icon-placeholder-sm" style="display:none;">Not found</span>';
+    } else {
+      pSmallWrap.style.display = 'none';
+    }
+
+    pButtons.innerHTML = '';
+    var btns = [];
+    if (d.button1_label) btns.push({ label: d.button1_label, url: d.button1_url });
+    if (d.button2_label) btns.push({ label: d.button2_label, url: d.button2_url });
+
+    if (btns.length) {
+      btns.forEach(function(b) {
+        var btn = document.createElement('div');
+        btn.className = 'preview-btn-item';
+        btn.textContent = b.label;
+        pButtons.appendChild(btn);
+      });
+      pButtons.style.display = 'flex';
+    } else {
+      pButtons.style.display = 'none';
+    }
+  }
+
+  var allInputs = document.querySelectorAll(
+    '#rpType, #rpName, #rpDetails, #rpState, ' +
+    '#rpLargeImg, #rpLargeTip, #rpSmallImg, #rpSmallTip, ' +
+    '#rpBtn1Label, #rpBtn1Url, #rpBtn2Label, #rpBtn2Url'
+  );
+
+  for (var i = 0; i < allInputs.length; i++) {
+    allInputs[i].addEventListener('input', updatePreview);
+  }
+
+  elType.addEventListener('change', updatePreview);
+
+  setInterval(function() {
+    if (elTimestamp.classList.contains('active') &&
+        elEnabled.classList.contains('active') &&
+        elName.value.trim()) {
+      updatePreview();
+    }
+  }, 1000);
+
+  function loadPresence() {
+    fetch('/api/presence')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.enabled) elEnabled.classList.add('active');
+        else elEnabled.classList.remove('active');
+
+        elType.value = d.type || '0';
+        elName.value = d.name || '';
+        elDetails.value = d.details || '';
+        elState.value = d.state || '';
+        elLargeImg.value = d.large_image || '';
+        elLargeTip.value = d.large_image_text || '';
+        elSmallImg.value = d.small_image || '';
+        elSmallTip.value = d.small_image_text || '';
+
+        if (d.start_timestamp) elTimestamp.classList.add('active');
+        else elTimestamp.classList.remove('active');
+
+        if (d.buttons && d.buttons.length >= 1) {
+          elBtn1Label.value = d.buttons[0].label || '';
+          elBtn1Url.value = d.buttons[0].url || '';
+        }
+        if (d.buttons && d.buttons.length >= 2) {
+          elBtn2Label.value = d.buttons[1].label || '';
+          elBtn2Url.value = d.buttons[1].url || '';
+        }
+
+        updatePreview();
+      })
+      .catch(function() {});
+  }
+
+  function savePresence() {
+    var btn = document.getElementById('applyBtn');
+    btn.disabled = true;
+    btn.textContent = 'Applying...';
+
+    var data = {
+      enabled: elEnabled.classList.contains('active'),
+      type: elType.options[elType.selectedIndex].text.toLowerCase(),
+      name: elName.value.trim(),
+      details: elDetails.value.trim(),
+      state: elState.value.trim(),
+      large_image: elLargeImg.value.trim(),
+      large_image_text: elLargeTip.value.trim(),
+      small_image: elSmallImg.value.trim(),
+      small_image_text: elSmallTip.value.trim(),
+      start_timestamp: elTimestamp.classList.contains('active'),
+      buttons: []
+    };
+
+    if (elBtn1Label.value.trim()) {
+      data.buttons.push({ label: elBtn1Label.value.trim(), url: elBtn1Url.value.trim() });
+    }
+    if (elBtn2Label.value.trim()) {
+      data.buttons.push({ label: elBtn2Label.value.trim(), url: elBtn2Url.value.trim() });
+    }
+
+    fetch('/api/presence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) showToast('Presence updated!', '');
+      else showToast('Failed to update.', true);
+    })
+    .catch(function() {
+      showToast('Network error.', true);
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Apply Changes';
+    });
+  }
+
+  loadPresence();
+</script>
+</body>
+</html>
