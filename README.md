@@ -110,9 +110,9 @@ Use `.help` in Discord to browse.
 
 ## Database
 
-`aiosqlite` stores data in `phase.db`:
+`aiosqlite` stores data in `zne.db`:
 
-- `phase_meta` - schema version tracking
+- `zne_meta` - schema version tracking
 - `message_log` - guild_id, channel_id, author_id, content, timestamp
 
 ## Disclaimer
